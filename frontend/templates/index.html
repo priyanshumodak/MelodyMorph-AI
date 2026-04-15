@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- MIDI.js for in-browser MIDI playback -->
     <script src="https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/core.js"></script>
     <style>
         * {
@@ -172,10 +171,12 @@
             flex-shrink: 0;
             color: #000;
         }
+        
         .preview-btn:hover {
             transform: scale(1.12);
             box-shadow: 0 4px 16px rgba(255,255,255,0.4);
         }
+        
         .preview-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
         .preview-btn i { width: 18px; height: 18px; }
 
@@ -258,6 +259,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            margin-bottom: 12px; /* Added spacing between buttons */
         }
 
         .generate-btn:hover {
@@ -599,6 +601,11 @@
                 Generate Mashup
             </button>
             
+            <button class="generate-btn" onclick="generateAI()" style="background:linear-gradient(135deg,#00ffcc,#00ccff);">
+                <i data-lucide="cpu"></i>
+                Generate AI Music (GAN)
+            </button>
+            
             <div class="progress-section" id="progressSection">
                 <h3><i data-lucide="loader"></i> Evolution in Progress</h3>
                 <div class="stats-grid" id="liveStats">
@@ -672,6 +679,27 @@
     </div>
     
     <script>
+        // ✅ NEW GAN FUNCTION
+        function generateAI() {
+    fetch('/generate_ai')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert("Error: " + data.error);
+                return;
+            }
+
+            const audio = new Audio("/" + data.file);
+            audio.play();
+
+            alert("🎵 AI Music Generated & Playing!");
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Error generating AI music");
+        });
+}
+        
         // Initialize Lucide icons
         lucide.createIcons();
 
