@@ -55,3 +55,17 @@ tests/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+__pycache__/
+*.pyc
+
+# ML models (IMPORTANT)
+generator.pth
+generator_wgan.pth
+
+# Outputs
+gan_output.mid
+
+# env
+venv/
+.env
