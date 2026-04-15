@@ -35,7 +35,7 @@
 
 ```bash
 # Clone
-git clone https://github.com/VidhiDamani/MelodyMorph-AI.git
+git clone https://github.com/priyanshumodak/MelodyMorph-AI
 cd MelodyMorph-AI
 
 # Virtual environment
