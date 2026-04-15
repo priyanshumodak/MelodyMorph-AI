@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+
+# Dataset (too large for Git)
+Discover-MIDI-Dataset/
+data/real_midi_files/
+data/midi_files/
+data/processed/
+*.mid
+*.midi
+*.tar.gz
+*.wav
+*.mp3
+*.ogg
+*.aiff
+*.flac
+
+# Generated files
+data/generated/
+data/temp/
+data/visualizations/
+data/*.txt
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Git
+*.lock
+.gitignore
+!.gitignore
+
+# Test files (jo abhi delete kiye)
+test.py
+test_loader.py
+debug_dataset.py
+download_midis.py
+
+# Notebooks
+notebooks/
+tests/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

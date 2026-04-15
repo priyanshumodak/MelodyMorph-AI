@@ -1,0 +1,5 @@
+flask
+numpy
+pretty_midi
+tqdm
+gunicorn

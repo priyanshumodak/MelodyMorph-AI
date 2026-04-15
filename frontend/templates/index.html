@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MelodyMorph AI - Evolutionary Music</title>
+    <meta name="description" content="Create unique Bollywood melodies using Genetic Algorithm. Mix and match songs to generate stunning mashups.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- MIDI.js for in-browser MIDI playback -->
+    <script src="https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/es6/core.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top left, #1a1a2e 0%, #0a0a0a 100%);
+            min-height: 100vh;
+            padding: 32px 24px;
+            color: #f0f0f0;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* ── Header ────────────────────────────────────── */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 36px;
+            padding-top: 12px;
+        }
+
+        .header h1 {
+            font-size: 3.2em;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            text-transform: capitalize;
+        }
+
+        .header h1 i { 
+            -webkit-text-fill-color: initial; 
+            color: #ffffff; 
+            width: 36px;
+            height: 36px;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.4));
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .header h1:hover i {
+            transform: scale(1.2) rotate(15deg);
+        }
+
+        .header p {
+            font-size: 1.05em;
+            opacity: 0.7;
+            font-weight: 400;
+        }
+
+        /* ── Main Card ─────────────────────────────────── */
+        .main-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 40px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            margin-bottom: 32px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 12px;
+        }
+
+        .section-title i { color: #ffffff; width: 20px; height: 20px; }
+
+        /* ── Song Selector ─────────────────────────────── */
+        .song-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 28px;
+        }
+
+        .song-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 20px;
+            border-radius: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .song-box:hover {
+            border-color: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.07);
+            transform: translateY(-2px);
+        }
+
+        .song-box label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #fff;
+            font-size: 0.95em;
+        }
+
+        .song-box label i { width: 18px; height: 18px; color: #ffffff; }
+
+        .song-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .song-box select {
+            flex: 1;
+            padding: 11px 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            font-size: 0.9em;
+            background: rgba(0,0,0,0.35);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .song-box select:focus { border-color: #ffffff; outline: none; }
+        .song-box select option { background: #111111; color: #e0e0e0; }
+
+        .preview-btn {
+            background: linear-gradient(135deg, #ffffff, #cccccc);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+            color: #000;
+        }
+        .preview-btn:hover {
+            transform: scale(1.12);
+            box-shadow: 0 4px 16px rgba(255,255,255,0.4);
+        }
+        .preview-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .preview-btn i { width: 18px; height: 18px; }
+
+        .preview-status {
+            font-size: 0.75em;
+            color: rgba(255,255,255,0.8);
+            margin-top: 8px;
+            min-height: 18px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .preview-status i { width: 14px; height: 14px; }
+
+        /* ── Parameters ────────────────────────────────── */
+        .parameters {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .param-item {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 16px 18px;
+            border-radius: 12px;
+        }
+
+        .param-item label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: #ccc;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+
+        .param-item label i { width: 16px; height: 16px; color: #cccccc; }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .param-item input[type=range] {
+            flex: 1;
+            accent-color: #ffffff;
+            height: 6px;
+        }
+
+        .param-value {
+            background: rgba(255,255,255,0.15);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95em;
+            padding: 4px 10px;
+            border-radius: 6px;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        /* ── Generate Button ───────────────────────────── */
+        .generate-btn {
+            background: linear-gradient(135deg, #ffffff 0%, #dddddd 100%);
+            color: #000000;
+            border: none;
+            padding: 16px 36px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(255,255,255,0.35);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .generate-btn i { width: 20px; height: 20px; }
+
+        /* ── Progress ──────────────────────────────────── */
+        .progress-section {
+            margin-top: 28px;
+            padding: 24px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            display: none;
+        }
+
+        .progress-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
+            font-size: 1.1em;
+            margin-bottom: 16px;
+        }
+        .progress-section h3 i { color: #ffffff; width: 20px; height: 20px; }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dddddd, #ffffff);
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 8px;
+        }
+
+        /* ── Stats Grid ────────────────────────────────── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin: 18px 0;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .stat-box:hover { border-color: rgba(255,255,255,0.3); }
+
+        .stat-icon {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: center;
+        }
+        .stat-icon i { width: 20px; height: 20px; color: #cccccc; }
+
+        .stat-value {
+            font-size: 1.7em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff, #aaaaaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.8em;
+            margin-top: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Fitness Chart ─────────────────────────────── */
+        .fitness-chart {
+            height: 220px;
+            margin: 18px 0;
+            position: relative;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        canvas { width: 100%; height: 100%; }
+
+        /* ── Results Section ──────────────────────────── */
+        .results-section {
+            display: none;
+            margin-top: 24px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 28px;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+            color: #ffffff;
+            margin-bottom: 20px;
+        }
+        .results-section h3 i { width: 22px; height: 22px; }
+
+        .download-btn {
+            background: linear-gradient(135deg, #ffffff, #e0e0e0);
+            color: black;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1em;
+            border-radius: 50px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-family: inherit;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,255,255,0.35);
+        }
+
+        .download-btn i { width: 18px; height: 18px; }
+
+        /* ── Component Scores ──────────────────────────── */
+        .component-scores { margin-top: 24px; }
+
+        .component-scores h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ccc;
+            font-size: 0.95em;
+            margin-bottom: 14px;
+        }
+        .component-scores h4 i { width: 16px; height: 16px; color: #ffffff; }
+
+        .score-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .score-bar-label {
+            flex: 0 0 140px;
+            font-size: 0.82em;
+            color: rgba(255,255,255,0.6);
+            text-transform: capitalize;
+            font-weight: 500;
+        }
+
+        .score-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #888888, #ffffff);
+            transition: width 0.6s ease;
+        }
+
+        .score-bar-value {
+            flex: 0 0 50px;
+            text-align: right;
+            font-size: 0.82em;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* ── Footer ────────────────────────────────────── */
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            padding: 20px 24px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        .footer p {
+            color: rgba(255,255,255,0.45);
+            font-size: 0.85em;
+        }
+
+        .footer .footer-main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            color: rgba(255,255,255,0.55);
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .footer .footer-main i { width: 16px; height: 16px; }
+
+        #status {
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        #status i { width: 14px; height: 14px; }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.online { background: #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+        .status-dot.offline { background: #aaaaaa; }
+
+        /* ── Progress Message ──────────────────────────── */
+        #progressMessage {
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        #progressMessage i { width: 16px; height: 16px; }
+
+        /* ── Responsive ────────────────────────────────── */
+        @media (max-width: 700px) {
+            .song-selector, .parameters, .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 { font-size: 1.8em; }
+            body { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <i data-lucide="sparkles"></i>
+                MelodyMorph AI
+                <i data-lucide="sparkles"></i>
+            </h1>
+            <p>Formal Evolutionary Composition • Genetic Algorithm Engine</p>
+        </div>
+        
+        <div class="main-card">
+            <div class="song-selector">
+                <div class="song-box">
+                    <label><i data-lucide="mic-2"></i> Song 1</label>
+                    <div class="song-row">
+                        <select id="song1">
+                            <option value="">Loading songs...</option>
+                        </select>
+                        <button class="preview-btn" onclick="previewSong(1)" id="previewBtn1" title="Preview 10s">
+                            <i data-lucide="play"></i>
+                        </button>
+                    </div>
+                    <div class="preview-status" id="previewStatus1"></div>
+                </div>
+                <div class="song-box">
+                    <label><i data-lucide="guitar"></i> Song 2</label>
+                    <div class="song-row">
+                        <select id="song2">
+                            <option value="">Loading songs...</option>
+                        </select>
+                        <button class="preview-btn" onclick="previewSong(2)" id="previewBtn2" title="Preview 10s">
+                            <i data-lucide="play"></i>
+                        </button>
+                    </div>
+                    <div class="preview-status" id="previewStatus2"></div>
+                </div>
+            </div>
+            
+            <div class="parameters">
+                <div class="param-item">
+                    <label><i data-lucide="dna"></i> Generations</label>
+                    <div class="param-row">
+                        <input type="range" id="generations" min="10" max="100" value="50" step="5">
+                        <span class="param-value" id="genValue">50</span>
+                    </div>
+                </div>
+                <div class="param-item">
+                    <label><i data-lucide="users"></i> Population Size</label>
+                    <div class="param-row">
+                        <input type="range" id="population" min="20" max="100" value="50" step="10">
+                        <span class="param-value" id="popValue">50</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="generate-btn" onclick="startGeneration()" id="generateBtn">
+                <i data-lucide="wand-sparkles"></i>
+                Generate Mashup
+            </button>
+            
+            <div class="progress-section" id="progressSection">
+                <h3><i data-lucide="loader"></i> Evolution in Progress</h3>
+                <div class="stats-grid" id="liveStats">
+                    <div class="stat-box">
+                        <div class="stat-icon"><i data-lucide="hash"></i></div>
+                        <div class="stat-value" id="currentGen">0</div>
+                        <div class="stat-label">Generation</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i data-lucide="trophy"></i></div>
+                        <div class="stat-value" id="bestFitness">0.000</div>
+                        <div class="stat-label">Best Fitness</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i data-lucide="bar-chart-3"></i></div>
+                        <div class="stat-value" id="avgFitness">0.000</div>
+                        <div class="stat-label">Avg Fitness</div>
+                    </div>
+                </div>
+                
+                <div class="fitness-chart">
+                    <canvas id="fitnessChart"></canvas>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <div id="progressMessage">
+                    <i data-lucide="loader"></i> Initializing...
+                </div>
+            </div>
+            
+            <div class="results-section" id="resultsSection">
+                <h3><i data-lucide="sparkles"></i> Mashup Generated!</h3>
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-icon"><i data-lucide="award"></i></div>
+                        <div class="stat-value" id="finalFitness">0.000</div>
+                        <div class="stat-label">Final Fitness</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i data-lucide="timer"></i></div>
+                        <div class="stat-value" id="timeTaken">0s</div>
+                        <div class="stat-label">Time Taken</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon"><i data-lucide="layers"></i></div>
+                        <div class="stat-value" id="components">0</div>
+                        <div class="stat-label">Components</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: center; gap: 16px; margin: 24px 0;">
+                    <button class="download-btn" id="playMashupBtn" onclick="playMashup()">
+                        <i data-lucide="play"></i> Play Mashup
+                    </button>
+                    <a href="#" class="download-btn" id="downloadBtn" onclick="downloadMashup()">
+                        <i data-lucide="download"></i> Download MIDI
+                    </a>
+                </div>
+                
+                <div class="component-scores" id="componentScores"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p id="status"><i data-lucide="wifi-off"></i> Checking server...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Global variables
+        let currentRunId = null;
+        let fitnessChart = null;
+        let previewAudio = null;
+        let previewTimeout = null;
+        let activePreview = null;
+
+        // Load songs on page load
+        window.onload = function() {
+            checkServerStatus();
+            loadSongs();
+            
+            document.getElementById('generations').addEventListener('input', function(e) {
+                document.getElementById('genValue').textContent = e.target.value;
+            });
+            
+            document.getElementById('population').addEventListener('input', function(e) {
+                document.getElementById('popValue').textContent = e.target.value;
+            });
+        };
+
+        function checkServerStatus() {
+            fetch('/api/status')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('status').innerHTML = 
+                        `<span class="status-dot online"></span> Server online &mdash; ${data.songs_available} songs available`;
+                    lucide.createIcons();
+                })
+                .catch(err => {
+                    document.getElementById('status').innerHTML = 
+                        '<span class="status-dot offline"></span> Cannot connect to server';
+                });
+        }
+
+        function loadSongs() {
+            fetch('/api/songs')
+                .then(res => res.json())
+                .then(data => {
+                    const song1Select = document.getElementById('song1');
+                    const song2Select = document.getElementById('song2');
+                    
+                    song1Select.innerHTML = '';
+                    song2Select.innerHTML = '';
+                    
+                    data.songs.forEach((song, index) => {
+                        song1Select.innerHTML += `<option value="${index}">${song}</option>`;
+                        song2Select.innerHTML += `<option value="${index}">${song}</option>`;
+                    });
+                    
+                    if (data.songs.length > 1) {
+                        song2Select.value = "1";
+                    }
+                });
+        }
+
+        // ── Song Preview (10 seconds, Insta-style) ──────────
+        function previewSong(num) {
+            const select = document.getElementById('song' + num);
+            const btn = document.getElementById('previewBtn' + num);
+            const statusEl = document.getElementById('previewStatus' + num);
+            const songIdx = select.value;
+
+            if (!songIdx && songIdx !== 0 && songIdx !== '0') {
+                statusEl.innerHTML = '<i data-lucide="alert-circle"></i> Select a song first';
+                lucide.createIcons();
+                return;
+            }
+
+            // If already previewing this song, stop it
+            if (activePreview === num) {
+                stopPreview(num);
+                return;
+            }
+
+            // Stop any other preview
+            if (activePreview !== null) {
+                stopPreview(activePreview);
+            }
+
+            statusEl.innerHTML = '<i data-lucide="loader"></i> Loading preview...';
+            btn.disabled = true;
+            lucide.createIcons();
+
+            // Fetch the JSON note preview and play with Web Audio
+            fetch(`/api/preview/${songIdx}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Preview not available');
+                    return res.json();
+                })
+                .then(data => {
+                    // Use the Web Audio API to synthesize JSON notes
+                    playNotesPreview(data.notes, num);
+                })
+                .catch(err => {
+                    statusEl.innerHTML = '<i data-lucide="alert-circle"></i> Preview unavailable';
+                    btn.disabled = false;
+                    lucide.createIcons();
+                });
+        }
+
+        function playNotesPreview(notes, num) {
+            const btn = document.getElementById('previewBtn' + num);
+            const statusEl = document.getElementById('previewStatus' + num);
+
+            // Simple notes-to-audio synthesis using Web Audio API
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if (!notes || notes.length === 0) {
+                if (statusEl) statusEl.innerHTML = '<i data-lucide="alert-circle"></i> No playable notes';
+                if (btn) btn.disabled = false;
+                lucide.createIcons();
+                return;
+            }
+
+            activePreview = num;
+            if (btn) btn.innerHTML = '<i data-lucide="square"></i>';
+            if (btn) btn.disabled = false;
+            if (statusEl) {
+                statusEl.innerHTML = '<i data-lucide="volume-2"></i> Playing preview...';
+            }
+            lucide.createIcons();
+
+            // Schedule all notes
+            const oscillators = [];
+            const maxTime = num === 'mashup' ? 30 : 10; // 30s for mashup, 10s for preview
+
+            notes.forEach(note => {
+                if (note.start > maxTime) return;
+                const end = Math.min(note.end, maxTime);
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                // Convert MIDI pitch to frequency
+                osc.frequency.value = 440 * Math.pow(2, (note.pitch - 69) / 12);
+                osc.type = 'triangle';
+
+                // Envelope
+                const vol = (note.velocity || 90) / 127 * 0.15;
+                const duration = end - note.start;
+                const safeAttack = Math.min(0.02, duration / 2);
+                const safeRelease = Math.min(0.02, duration / 2);
+                
+                gain.gain.setValueAtTime(0, audioCtx.currentTime + note.start);
+                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + note.start + safeAttack);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime + end - safeRelease);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + end);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + note.start);
+                osc.stop(audioCtx.currentTime + end);
+                oscillators.push({ osc, gain });
+            });
+
+            // Auto-stop after 10 seconds
+            previewTimeout = setTimeout(() => {
+                stopPreview(num);
+            }, maxTime * 1000);
+
+            // Store context for stopping
+            window._previewCtx = audioCtx;
+            window._previewOscillators = oscillators;
+        }
+
+        function parseMidiNotes(bytes) {
+            // Simple MIDI parser that extracts Note On / Note Off events
+            const notes = [];
+            let pos = 0;
+
+            // Check MIDI header
+            if (bytes[0] !== 0x4D || bytes[1] !== 0x54) return notes;
+
+            // Read header
+            const headerLen = (bytes[4] << 24) | (bytes[5] << 16) | (bytes[6] << 8) | bytes[7];
+            const format = (bytes[8] << 8) | bytes[9];
+            const numTracks = (bytes[10] << 8) | bytes[11];
+            let ticksPerBeat = (bytes[12] << 8) | bytes[13];
+            if (ticksPerBeat === 0) ticksPerBeat = 480;
+
+            pos = 8 + headerLen;
+
+            let tempo = 500000; // default 120 BPM
+
+            for (let t = 0; t < numTracks && pos < bytes.length; t++) {
+                // Track header
+                if (bytes[pos] !== 0x4D || bytes[pos+1] !== 0x54) break;
+                const trackLen = (bytes[pos+4] << 24) | (bytes[pos+5] << 16) | (bytes[pos+6] << 8) | bytes[pos+7];
+                pos += 8;
+                const trackEnd = pos + trackLen;
+
+                let tick = 0;
+                let lastStatus = 0;
+                const activeNotes = {};
+
+                while (pos < trackEnd && pos < bytes.length) {
+                    // Read delta time (variable length)
+                    let delta = 0;
+                    let b;
+                    do {
+                        b = bytes[pos++];
+                        delta = (delta << 7) | (b & 0x7F);
+                    } while (b & 0x80 && pos < trackEnd);
+
+                    tick += delta;
+                    const timeSec = (tick / ticksPerBeat) * (tempo / 1000000);
+
+                    // Read event
+                    let status = bytes[pos];
+                    if (status & 0x80) {
+                        lastStatus = status;
+                        pos++;
+                    } else {
+                        status = lastStatus;
+                    }
+
+                    const type = status & 0xF0;
+
+                    if (type === 0x90) { // Note On
+                        const pitch = bytes[pos++];
+                        const vel = bytes[pos++];
+                        if (vel > 0) {
+                            activeNotes[pitch] = { pitch, start: timeSec, velocity: vel };
+                        } else {
+                            // Note Off (velocity 0)
+                            if (activeNotes[pitch]) {
+                                notes.push({ ...activeNotes[pitch], end: timeSec });
+                                delete activeNotes[pitch];
+                            }
+                        }
+                    } else if (type === 0x80) { // Note Off
+                        const pitch = bytes[pos++];
+                        pos++; // velocity
+                        if (activeNotes[pitch]) {
+                            notes.push({ ...activeNotes[pitch], end: timeSec });
+                            delete activeNotes[pitch];
+                        }
+                    } else if (type === 0xFF) { // Meta event
+                        const metaType = bytes[pos++];
+                        let len = 0;
+                        do {
+                            b = bytes[pos++];
+                            len = (len << 7) | (b & 0x7F);
+                        } while (b & 0x80 && pos < trackEnd);
+                        if (metaType === 0x51 && len === 3) {
+                            tempo = (bytes[pos] << 16) | (bytes[pos+1] << 8) | bytes[pos+2];
+                        }
+                        pos += len;
+                    } else if (type === 0xC0 || type === 0xD0) {
+                        pos++; // 1 data byte
+                    } else if (type === 0xF0 || type === 0xF7) {
+                        // SysEx
+                        let len = 0;
+                        do {
+                            b = bytes[pos++];
+                            len = (len << 7) | (b & 0x7F);
+                        } while (b & 0x80 && pos < trackEnd);
+                        pos += len;
+                    } else {
+                        pos += 2; // default 2 data bytes
+                    }
+                }
+
+                // Close any remaining notes
+                for (const pitch in activeNotes) {
+                    const timeSec = (tick / ticksPerBeat) * (tempo / 1000000);
+                    notes.push({ ...activeNotes[pitch], end: timeSec });
+                }
+            }
+
+            return notes;
+        }
+
+        function stopPreview(num) {
+            const btn = document.getElementById('previewBtn' + num);
+            const statusEl = document.getElementById('previewStatus' + num);
+
+            if (previewTimeout) {
+                clearTimeout(previewTimeout);
+                previewTimeout = null;
+            }
+
+            if (window._previewCtx) {
+                try { window._previewCtx.close(); } catch(e) {}
+                window._previewCtx = null;
+            }
+
+            activePreview = null;
+            if (btn) {
+                btn.innerHTML = '<i data-lucide="play"></i>';
+                btn.disabled = false;
+            }
+            if (statusEl) {
+                statusEl.innerHTML = '';
+            }
+            lucide.createIcons();
+        }
+
+        // ── GA Generation ───────────────────────────────
+        function startGeneration() {
+            const song1 = document.getElementById('song1').value;
+            const song2 = document.getElementById('song2').value;
+            const generations = document.getElementById('generations').value;
+            const population = document.getElementById('population').value;
+            
+            if (!song1 && song1 !== '0' || !song2 && song2 !== '0') {
+                alert('Please select both songs');
+                return;
+            }
+            
+            // Show progress section
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+            
+            // Reset progress
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('currentGen').textContent = '0';
+            document.getElementById('bestFitness').textContent = '0.000';
+            document.getElementById('avgFitness').textContent = '0.000';
+            
+            // Initialize chart
+            if (fitnessChart) {
+                fitnessChart.destroy();
+            }
+            
+            const ctx = document.getElementById('fitnessChart').getContext('2d');
+            fitnessChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Best Fitness',
+                        data: [],
+                        borderColor: '#ffffff',
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }, {
+                        label: 'Avg Fitness',
+                        data: [],
+                        borderColor: '#aaaaaa',
+                        backgroundColor: 'rgba(255,255,255,0.05)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'rgba(255,255,255,0.6)', font: { family: 'Inter', size: 11 } }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: 'rgba(255,255,255,0.4)', font: { family: 'Inter', size: 10 } }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: 'rgba(255,255,255,0.3)', font: { family: 'Inter', size: 10 } }
+                        }
+                    }
+                }
+            });
+            
+            // Start generation
+            fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    song1: parseInt(song1),
+                    song2: parseInt(song2),
+                    generations: parseInt(generations),
+                    population_size: parseInt(population)
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentRunId = data.run_id;
+                    
+                    // Update chart with history
+                    const labels = Array.from({length: data.fitness_history.length}, (_, i) => i);
+                    
+                    fitnessChart.data.labels = labels;
+                    fitnessChart.data.datasets[0].data = data.fitness_history;
+                    fitnessChart.data.datasets[1].data = data.avg_fitness_history;
+                    fitnessChart.update();
+                    
+                    // Update final stats
+                    document.getElementById('progressFill').style.width = '100%';
+                    document.getElementById('currentGen').textContent = data.generations;
+                    document.getElementById('bestFitness').textContent = data.best_fitness.toFixed(3);
+
+                    // FIX: update avg fitness from the last value in avg_fitness_history
+                    if (data.avg_fitness_history && data.avg_fitness_history.length > 0) {
+                        document.getElementById('avgFitness').textContent =
+                            data.avg_fitness_history[data.avg_fitness_history.length - 1].toFixed(3);
+                    }
+
+                    document.getElementById('finalFitness').textContent = data.best_fitness.toFixed(3);
+                    document.getElementById('timeTaken').textContent = data.time_taken.toFixed(1) + 's';
+                    
+                    // Show component scores as horizontal bars
+                    let componentHtml = '<h4><i data-lucide="sliders-horizontal"></i> Fitness Components</h4>';
+                    for (let [key, value] of Object.entries(data.fitness_components)) {
+                        const pct = (value * 100).toFixed(1);
+                        const label = key.replace(/_/g, ' ');
+                        componentHtml += `
+                            <div class="score-bar-item">
+                                <span class="score-bar-label">${label}</span>
+                                <div class="score-bar-track">
+                                    <div class="score-bar-fill" style="width: ${pct}%"></div>
+                                </div>
+                                <span class="score-bar-value">${pct}%</span>
+                            </div>`;
+                    }
+                    document.getElementById('componentScores').innerHTML = componentHtml;
+                    
+                    document.getElementById('components').textContent = Object.keys(data.fitness_components).length;
+                    
+                    // Show results
+                    document.getElementById('resultsSection').style.display = 'block';
+                    document.getElementById('progressMessage').innerHTML = 
+                        `<i data-lucide="check-circle"></i> Complete! Best fitness: ${data.best_fitness.toFixed(3)}`;
+                        
+                    // Update the section header
+                    const progressHeader = document.querySelector('#progressSection h3');
+                    if (progressHeader) {
+                        progressHeader.innerHTML = '<i data-lucide="check-circle" class="text-success"></i> Evolution Complete!';
+                    }
+                    
+                    // Set download link
+                    document.getElementById('downloadBtn').href = `/api/download/${data.run_id}`;
+
+                    // Re-init icons for new elements
+                    lucide.createIcons();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(err => {
+                alert('Error: ' + err);
+            })
+            .finally(() => {
+                document.getElementById('generateBtn').disabled = false;
+            });
+        }
+        
+        function downloadMashup() {
+            if (!currentRunId) return;
+            // Download handled by href
+        }
+
+        function playMashup() {
+            if (!currentRunId) return;
+            
+            const btn = document.getElementById('playMashupBtn');
+            const statusMessage = document.getElementById('progressMessage');
+            
+            // If already playing mashup, stop it
+            if (activePreview === 'mashup') {
+                stopPreview('mashup');
+                btn.innerHTML = '<i data-lucide="play"></i> Play Mashup';
+                lucide.createIcons();
+                return;
+            }
+
+            // Stop any other preview
+            if (activePreview !== null) {
+                stopPreview(activePreview);
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader"></i> Loading...';
+            lucide.createIcons();
+
+            fetch(`/api/mashup_preview/${currentRunId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Mashup preview not available');
+                    return res.json();
+                })
+                .then(data => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="square"></i> Stop Mashup';
+                    playNotesPreview(data.notes, 'mashup');
+                })
+                .catch(err => {
+                    alert('Error: ' + err.message);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i data-lucide="play"></i> Play Mashup';
+                    lucide.createIcons();
+                });
+        }
+
+        // Add helper to handle the stop button in UI
+        const originalStopPreview = stopPreview;
+        stopPreview = function(num) {
+            originalStopPreview(num);
+            if (num === 'mashup') {
+                const btn = document.getElementById('playMashupBtn');
+                if (btn) {
+                    btn.innerHTML = '<i data-lucide="play"></i> Play Mashup';
+                    lucide.createIcons();
+                }
+            }
+        };
+    </script>
+</body>
+</html>
